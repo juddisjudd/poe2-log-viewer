@@ -36,19 +36,18 @@ function App() {
     autoStartWatching: true,
   });
   const [currentVersion, setCurrentVersion] = useState<string>("");
-  const [updateInfo, setUpdateInfo] = useState<UpdateInfo>({ available: false });
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo>({
+    available: false,
+  });
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
-  
-  // Use ref to track processed log IDs to prevent duplicates
+
   const processedLogIds = useRef(new Set<string>());
 
-  // Get current version on mount
   useEffect(() => {
     const getCurrentVersion = async () => {
       try {
         const version = await getVersion();
         setCurrentVersion(version);
-        // Check for updates on startup
         checkForUpdates(version);
       } catch (err) {
         console.error("Failed to get app version:", err);
@@ -57,25 +56,26 @@ function App() {
     getCurrentVersion();
   }, []);
 
-  // Check for updates function
   const checkForUpdates = async (currentVer?: string) => {
     setIsCheckingUpdate(true);
     try {
       const version = currentVer || currentVersion;
-      const response = await fetch("https://api.github.com/repos/YOUR_USERNAME/poe2-log-viewer/releases/latest");
-      
+      const response = await fetch(
+        "https://api.github.com/repos/juddisjudd/poe2-log-viewer/releases/latest"
+      );
+
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.status}`);
       }
-      
+
       const release = await response.json();
-      const latestVersion = release.tag_name.replace(/^v/, ""); // Remove 'v' prefix if present
-      
+      const latestVersion = release.tag_name.replace(/^v/, "");
+
       if (isNewerVersion(latestVersion, version)) {
         setUpdateInfo({
           available: true,
           version: latestVersion,
-          downloadUrl: release.html_url
+          downloadUrl: release.html_url,
         });
       } else {
         setUpdateInfo({ available: false });
@@ -88,43 +88,42 @@ function App() {
     }
   };
 
-  // Simple version comparison (assumes semantic versioning)
   const isNewerVersion = (latest: string, current: string): boolean => {
-    const parseVersion = (v: string) => v.split('.').map(n => parseInt(n, 10));
+    const parseVersion = (v: string) =>
+      v.split(".").map((n) => parseInt(n, 10));
     const latestParts = parseVersion(latest);
     const currentParts = parseVersion(current);
-    
-    for (let i = 0; i < Math.max(latestParts.length, currentParts.length); i++) {
+
+    for (
+      let i = 0;
+      i < Math.max(latestParts.length, currentParts.length);
+      i++
+    ) {
       const latestPart = latestParts[i] || 0;
       const currentPart = currentParts[i] || 0;
-      
+
       if (latestPart > currentPart) return true;
       if (latestPart < currentPart) return false;
     }
     return false;
   };
 
-  // Handle update click
   const handleUpdateClick = () => {
     if (updateInfo.downloadUrl) {
-      // Open download page in default browser
       invoke("open_url", { url: updateInfo.downloadUrl });
     }
   };
 
-  // Load settings from localStorage on mount
   useEffect(() => {
     const savedSettings = localStorage.getItem("poe2-log-viewer-settings");
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings) as AppSettings;
         setSettings(parsed);
-        
-        // Auto-load last file if enabled
+
         if (parsed.autoLoadLastFile && parsed.lastFilePath) {
           setCurrentFile(parsed.lastFilePath);
           if (parsed.autoStartWatching) {
-            // Delay to ensure component is fully mounted
             setTimeout(() => {
               startWatching(parsed.lastFilePath!);
             }, 100);
@@ -136,27 +135,24 @@ function App() {
     }
   }, []);
 
-  // Save settings to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem("poe2-log-viewer-settings", JSON.stringify(settings));
   }, [settings]);
 
-  // Create a stable callback for handling log events
   const handleLogEvent = useCallback((event: { payload: LogEvent }) => {
     const logEntry = event.payload;
-    
-    // Create a unique ID for this log entry
-    const logId = `${logEntry.timestamp}-${logEntry.category}-${logEntry.message.substring(0, 50)}`;
-    
-    // Check if we've already processed this log
+
+    const logId = `${logEntry.timestamp}-${
+      logEntry.category
+    }-${logEntry.message.substring(0, 50)}`;
+
     if (processedLogIds.current.has(logId)) {
       console.log("Duplicate log filtered in frontend:", logId);
       return;
     }
-    
-    // Add to processed set
+
     processedLogIds.current.add(logId);
-    
+
     console.log("Received log event:", logEntry);
     setLogs((prev) => [...prev, logEntry]);
   }, []);
@@ -174,7 +170,6 @@ function App() {
 
     setupListener();
 
-    // Cleanup function
     return () => {
       if (unlisten) {
         unlisten();
@@ -186,7 +181,7 @@ function App() {
     try {
       setError("");
       console.log("Starting to watch file:", filePath);
-      
+
       const result = await invoke<string>("start_watching", { path: filePath });
       setIsWatching(true);
       console.log("Watch result:", result);
@@ -200,22 +195,19 @@ function App() {
   const pickFile = async () => {
     try {
       const selected = await open({
-        filters: [
-          { name: "Log Files", extensions: ["txt", "log"] }
-        ],
+        filters: [{ name: "Log Files", extensions: ["txt", "log"] }],
       });
 
       if (typeof selected === "string") {
         setCurrentFile(selected);
-        setLogs([]); // Clear existing logs
-        processedLogIds.current.clear(); // Clear processed log IDs
-        
-        // Save the selected file path
-        setSettings(prev => ({
+        setLogs([]);
+        processedLogIds.current.clear();
+
+        setSettings((prev) => ({
           ...prev,
-          lastFilePath: selected
+          lastFilePath: selected,
         }));
-        
+
         await startWatching(selected);
       }
     } catch (err) {
@@ -237,7 +229,7 @@ function App() {
 
   const clearLogs = () => {
     setLogs([]);
-    processedLogIds.current.clear(); // Clear processed log IDs when clearing logs
+    processedLogIds.current.clear();
   };
 
   const reloadCurrentFile = async () => {
@@ -249,9 +241,9 @@ function App() {
   };
 
   const updateSetting = (key: keyof AppSettings, value: boolean) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
-      [key]: value
+      [key]: value,
     }));
   };
 
@@ -262,7 +254,7 @@ function App() {
   const getShortPath = (path: string) => {
     const parts = path.split(/[\\/]/);
     if (parts.length > 3) {
-      return `.../${parts.slice(-2).join('/')}`;
+      return `.../${parts.slice(-2).join("/")}`;
     }
     return path;
   };
@@ -273,13 +265,17 @@ function App() {
       <div className="bg-gray-950 border-b border-gray-800 p-3 flex-shrink-0">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <h1 className="text-lg font-semibold text-white">POE2 Log Viewer</h1>
+            <h1 className="text-lg font-semibold text-white">
+              POE2 Log Viewer
+            </h1>
             <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${
-                isWatching ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'
-              }`} />
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  isWatching ? "bg-emerald-400 animate-pulse" : "bg-red-400"
+                }`}
+              />
               <span className="text-xs text-gray-400">
-                {isWatching ? 'Live' : 'Stopped'}
+                {isWatching ? "Live" : "Stopped"}
               </span>
             </div>
           </div>
@@ -332,7 +328,9 @@ function App() {
           <div className="flex items-center gap-3">
             <div className="text-gray-400">
               <span className="text-gray-500">Logs:</span>
-              <span className="text-white ml-1 font-medium">{logs.length.toLocaleString()}</span>
+              <span className="text-white ml-1 font-medium">
+                {logs.length.toLocaleString()}
+              </span>
             </div>
             {/* Version and Update Info */}
             <div className="flex items-center gap-2">
@@ -360,7 +358,9 @@ function App() {
               <input
                 type="checkbox"
                 checked={settings.autoLoadLastFile}
-                onChange={(e) => updateSetting('autoLoadLastFile', e.target.checked)}
+                onChange={(e) =>
+                  updateSetting("autoLoadLastFile", e.target.checked)
+                }
                 className="w-3 h-3 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500 focus:ring-1"
               />
               <span>Remember last file</span>
@@ -369,7 +369,9 @@ function App() {
               <input
                 type="checkbox"
                 checked={settings.autoStartWatching}
-                onChange={(e) => updateSetting('autoStartWatching', e.target.checked)}
+                onChange={(e) =>
+                  updateSetting("autoStartWatching", e.target.checked)
+                }
                 className="w-3 h-3 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500 focus:ring-1"
               />
               <span>Auto-start watching</span>

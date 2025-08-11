@@ -11,6 +11,10 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write
+  releases: write
+
 jobs:
   build-and-release:
     runs-on: windows-latest
