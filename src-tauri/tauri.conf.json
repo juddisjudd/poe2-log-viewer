@@ -1,6 +1,6 @@
 {
   "productName": "POE2 Log Viewer",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "identifier": "com.poe2.logviewer",
   "build": {
     "beforeDevCommand": "bun run dev",

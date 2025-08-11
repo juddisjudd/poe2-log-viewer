@@ -1,6 +1,6 @@
 [package]
 name = "poe2-log-viewer"
-version = "0.1.4"
+version = "0.1.5"
 description = "Path of Exile 2 Log Viewer"
 authors = ["juddisjudd"]
 license = "MIT"

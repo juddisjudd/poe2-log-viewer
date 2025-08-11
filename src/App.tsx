@@ -40,6 +40,9 @@ function App() {
     available: false,
   });
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [lastCheckResult, setLastCheckResult] = useState<
+    "none" | "up-to-date" | "available" | "error"
+  >("none");
 
   const processedLogIds = useRef(new Set<string>());
 
@@ -71,18 +74,23 @@ function App() {
       const release = await response.json();
       const latestVersion = release.tag_name.replace(/^v/, "");
 
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
       if (isNewerVersion(latestVersion, version)) {
         setUpdateInfo({
           available: true,
           version: latestVersion,
           downloadUrl: release.html_url,
         });
+        setLastCheckResult("available");
       } else {
         setUpdateInfo({ available: false });
+        setLastCheckResult("up-to-date");
       }
     } catch (err) {
       console.error("Failed to check for updates:", err);
       setUpdateInfo({ available: false });
+      setLastCheckResult("error");
     } finally {
       setIsCheckingUpdate(false);
     }
@@ -268,6 +276,51 @@ function App() {
             <h1 className="text-lg font-semibold text-white">
               POE2 Log Viewer
             </h1>
+
+            {/* Version and Update Info - Moved to header */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">
+                v{currentVersion}
+              </span>
+              {updateInfo.available && (
+                <button
+                  onClick={handleUpdateClick}
+                  className="bg-green-900 hover:bg-green-800 text-green-100 px-2 py-1 rounded text-xs font-medium transition-colors animate-pulse"
+                  title={`Update available: v${updateInfo.version}`}
+                >
+                  ↗ Update to v{updateInfo.version}
+                </button>
+              )}
+              {isCheckingUpdate ? (
+                <span className="text-xs text-blue-400 animate-pulse">
+                  Checking...
+                </span>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => checkForUpdates()}
+                    className={`text-gray-500 hover:text-gray-300 transition-all duration-200 p-1 rounded ${
+                      isCheckingUpdate ? "animate-spin" : ""
+                    }`}
+                    title="Check for updates"
+                  >
+                    🔄
+                  </button>
+                  {lastCheckResult === "up-to-date" && (
+                    <span className="text-xs text-green-400 opacity-75">
+                      Up to date
+                    </span>
+                  )}
+                  {lastCheckResult === "error" && (
+                    <span className="text-xs text-red-400 opacity-75">
+                      Check failed
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Live/Stopped Status */}
             <div className="flex items-center gap-2">
               <div
                 className={`w-2 h-2 rounded-full ${
@@ -325,67 +378,38 @@ function App() {
               <span>No file selected</span>
             )}
           </div>
-          <div className="flex items-center gap-3">
-            <div className="text-gray-400">
-              <span className="text-gray-500">Logs:</span>
-              <span className="text-white ml-1 font-medium">
-                {logs.length.toLocaleString()}
-              </span>
-            </div>
-            {/* Version and Update Info */}
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">v{currentVersion}</span>
-              {updateInfo.available && (
-                <button
-                  onClick={handleUpdateClick}
-                  className="bg-green-900 hover:bg-green-800 text-green-100 px-2 py-0.5 rounded text-xs font-medium transition-colors animate-pulse"
-                  title={`Update available: v${updateInfo.version}`}
-                >
-                  Update Available
-                </button>
-              )}
-              {isCheckingUpdate && (
-                <span className="text-gray-500 text-xs">Checking...</span>
-              )}
-            </div>
+          <div className="text-gray-400">
+            <span className="text-gray-500">Logs:</span>
+            <span className="text-white ml-1 font-medium">
+              {logs.length.toLocaleString()}
+            </span>
           </div>
         </div>
 
         {/* Settings */}
-        <div className="flex items-center justify-between gap-4 mt-2 text-xs">
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 text-gray-400 hover:text-gray-300 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.autoLoadLastFile}
-                onChange={(e) =>
-                  updateSetting("autoLoadLastFile", e.target.checked)
-                }
-                className="w-3 h-3 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500 focus:ring-1"
-              />
-              <span>Remember last file</span>
-            </label>
-            <label className="flex items-center gap-2 text-gray-400 hover:text-gray-300 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.autoStartWatching}
-                onChange={(e) =>
-                  updateSetting("autoStartWatching", e.target.checked)
-                }
-                className="w-3 h-3 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500 focus:ring-1"
-              />
-              <span>Auto-start watching</span>
-            </label>
-          </div>
-          {/* Manual update check */}
-          <button
-            onClick={() => checkForUpdates()}
-            disabled={isCheckingUpdate}
-            className="text-gray-500 hover:text-gray-300 transition-colors disabled:opacity-50"
-            title="Check for updates"
-          >
-            🔄
-          </button>
+        <div className="flex items-center gap-4 mt-2 text-xs">
+          <label className="flex items-center gap-2 text-gray-400 hover:text-gray-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.autoLoadLastFile}
+              onChange={(e) =>
+                updateSetting("autoLoadLastFile", e.target.checked)
+              }
+              className="w-3 h-3 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500 focus:ring-1"
+            />
+            <span>Remember last file</span>
+          </label>
+          <label className="flex items-center gap-2 text-gray-400 hover:text-gray-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.autoStartWatching}
+              onChange={(e) =>
+                updateSetting("autoStartWatching", e.target.checked)
+              }
+              className="w-3 h-3 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500 focus:ring-1"
+            />
+            <span>Auto-start watching</span>
+          </label>
         </div>
 
         {error && (
