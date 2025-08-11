@@ -1,0 +1,18 @@
+[package]
+name = "poe2-log-viewer"
+version = "0.1.1"
+description = "Path of Exile 2 Log Viewer"
+authors = ["juddisjudd"]
+license = "MIT"
+edition = "2021"
+rust-version = "1.70"
+
+[build-dependencies]
+tauri-build = { version = "1.5", features = ["codegen"] }
+
+[dependencies]
+tauri = { version = "1.6", features = [ "http-request", "shell-open", "dialog-open", "fs-exists", "fs-read-file"] }
+serde = { version = "1.0", features = ["derive"] }
+notify = "6.1"
+tokio = { version = "1.37", features = ["full"] }
+open = "5.0"

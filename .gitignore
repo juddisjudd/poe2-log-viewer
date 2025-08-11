@@ -1,0 +1,10 @@
+node_modules
+src-tauri/target/*
+
+
+dist
+.claude
+
+.aidigestignore
+codebase.md
+project-structure.md
