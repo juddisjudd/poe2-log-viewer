@@ -1,76 +1,50 @@
 {
-  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "productName": "POE2 Log Viewer",
+  "version": "0.1.2",
+  "identifier": "com.poe2.logviewer",
   "build": {
     "beforeDevCommand": "bun run dev",
+    "devUrl": "http://localhost:5173",
     "beforeBuildCommand": "bun run build",
-    "devPath": "http://localhost:5173",
-    "distDir": "../dist"
+    "frontendDist": "../dist"
   },
-  "package": {
-    "productName": "POE2 Log Viewer",
-    "version": "0.1.1"
-  },
-  "tauri": {
+  "app": {
     "windows": [
       {
+        "label": "main",
         "title": "POE2 Log Viewer",
-        "resizable": true,
-        "fullscreen": false,
         "width": 1400,
         "height": 900,
         "minWidth": 800,
-        "minHeight": 600
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false
       }
     ],
-    "allowlist": {
-      "all": false,
-      "fs": {
-        "all": false,
-        "readFile": true,
-        "exists": true,
-        "scope": ["**"]
-      },
-      "dialog": {
-        "all": false,
-        "open": true
-      },
-      "shell": {
-        "all": false,
-        "open": true
-      },
-      "http": {
-        "all": false,
-        "request": true,
-        "scope": ["https://api.github.com/repos/**/releases/latest"]
-      }
-    },
-    "bundle": {
-      "active": true,
-      "targets": ["msi"],
-      "identifier": "com.poe2.logviewer",
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/icon.png",
-        "icons/icon.ico"
-      ],
-      "category": "Utility",
-      "shortDescription": "Real-time Path of Exile 2 log viewer",
-      "longDescription": "A powerful desktop application for monitoring and analyzing Path of Exile 2 log files in real-time with advanced filtering and categorization.",
-      "windows": {
-        "certificateThumbprint": null,
-        "digestAlgorithm": "sha256",
-        "timestampUrl": "",
-        "wix": {
-          "language": "en-US"
-        }
-      }
-    },
     "security": {
-      "csp": null
-    },
-    "updater": {
-      "active": false
+      "csp": null,
+      "capabilities": ["default"]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "msi",
+    "category": "Utility",
+    "shortDescription": "Real-time Path of Exile 2 log viewer",
+    "longDescription": "A powerful desktop application for monitoring and analyzing Path of Exile 2 log files in real-time with advanced filtering and categorization.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png", 
+      "icons/icon.png",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "",
+      "wix": {
+        "language": "en-US"
+      }
     }
   }
 }

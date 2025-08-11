@@ -13,7 +13,7 @@ use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
 };
-use tauri::{Manager, State};
+use tauri::{Emitter, State};
 
 #[derive(Clone, Serialize, Debug)]
 struct LogEvent {
@@ -35,16 +35,18 @@ type SafeAppState = Arc<Mutex<AppState>>;
 #[tauri::command]
 async fn start_watching(
     path: String,
-    app_handle: tauri::AppHandle,
+    app: tauri::AppHandle,
     state: State<'_, SafeAppState>,
 ) -> Result<String, String> {
     let log_path = PathBuf::from(&path);
     println!("Attempting to watch file: {}", path);
 
+    // Validate file exists
     if !log_path.exists() {
         return Err("Log file does not exist".to_string());
     }
 
+    // Update state and reset for new file
     {
         let mut app_state = state.lock().map_err(|e| format!("Failed to lock state: {}", e))?;
         app_state.current_file = Some(log_path.clone());
@@ -52,11 +54,12 @@ async fn start_watching(
         app_state.processed_entries.clear();
     }
 
+    // Read existing content first
     match read_existing_logs(&log_path, state.inner().clone()) {
         Ok(existing_logs) => {
             println!("Found {} existing log entries", existing_logs.len());
             for log in existing_logs {
-                if let Err(e) = app_handle.emit_all("log_event", &log) {
+                if let Err(e) = app.emit("log_event", &log) {
                     eprintln!("Failed to emit existing log: {}", e);
                 }
             }
@@ -66,11 +69,12 @@ async fn start_watching(
         }
     }
 
-    let app_handle_clone = app_handle.clone();
+    let app_clone = app.clone();
     let state_clone = state.inner().clone();
 
+    // Spawn file watching thread
     tokio::spawn(async move {
-        if let Err(e) = watch_log_file(log_path, app_handle_clone, state_clone).await {
+        if let Err(e) = watch_log_file(log_path, app_clone, state_clone).await {
             eprintln!("Error watching file: {}", e);
         }
     });
@@ -99,6 +103,7 @@ fn read_existing_logs(log_path: &PathBuf, state: SafeAppState) -> Result<Vec<Log
     let mut log_entries = Vec::new();
     let mut current_entry_lines = Vec::new();
 
+    // Read all content as string to avoid ownership issues
     let contents = std::fs::read_to_string(log_path)?;
 
     for line in contents.lines() {
@@ -108,21 +113,26 @@ fn read_existing_logs(log_path: &PathBuf, state: SafeAppState) -> Result<Vec<Log
             continue;
         }
 
+        // Check if this line starts a new log entry (has timestamp)
         if is_timestamp_line(&trimmed) {
+            // Process the previous entry if we have one
             if !current_entry_lines.is_empty() {
                 if let Some(entry) = process_log_entry(&current_entry_lines, &state) {
                     log_entries.push(entry);
                 }
                 current_entry_lines.clear();
             }
+            // Start new entry
             current_entry_lines.push(trimmed.to_string());
         } else {
+            // This is a continuation line
             if !current_entry_lines.is_empty() {
                 current_entry_lines.push(trimmed.to_string());
             }
         }
     }
 
+    // Process the last entry
     if !current_entry_lines.is_empty() {
         if let Some(entry) = process_log_entry(&current_entry_lines, &state) {
             log_entries.push(entry);
@@ -135,11 +145,12 @@ fn read_existing_logs(log_path: &PathBuf, state: SafeAppState) -> Result<Vec<Log
 
 async fn watch_log_file(
     log_path: PathBuf,
-    app_handle: tauri::AppHandle,
+    app: tauri::AppHandle,
     state: SafeAppState,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut file = File::open(&log_path)?;
     
+    // Seek to the end of the file to only watch for NEW entries
     file.seek(SeekFrom::End(0))?;
     
     let mut reader = BufReader::new(file);
@@ -148,6 +159,7 @@ async fn watch_log_file(
     let mut current_entry_lines = Vec::new();
 
     loop {
+        // Check if we should continue watching
         {
             let app_state = state.lock().map_err(|e| format!("Failed to lock state: {}", e))?;
             if !app_state.is_watching {
@@ -158,6 +170,7 @@ async fn watch_log_file(
         let mut line = String::new();
         match reader.read_line(&mut line) {
             Ok(0) => {
+                // No new data, wait a bit
                 tokio::time::sleep(Duration::from_millis(200)).await;
             }
             Ok(_) => {
@@ -166,17 +179,21 @@ async fn watch_log_file(
                     continue;
                 }
 
+                // Check if this line starts a new log entry
                 if is_timestamp_line(&trimmed) {
+                    // Process the previous entry if we have one
                     if !current_entry_lines.is_empty() {
                         if let Some(entry) = process_log_entry(&current_entry_lines, &state) {
-                            if let Err(e) = app_handle.emit_all("log_event", &entry) {
+                            if let Err(e) = app.emit("log_event", &entry) {
                                 eprintln!("Failed to emit log event: {}", e);
                             }
                         }
                         current_entry_lines.clear();
                     }
+                    // Start new entry
                     current_entry_lines.push(trimmed.to_string());
                 } else {
+                    // This is a continuation line
                     if !current_entry_lines.is_empty() {
                         current_entry_lines.push(trimmed.to_string());
                     }
@@ -193,6 +210,7 @@ async fn watch_log_file(
 }
 
 fn is_timestamp_line(line: &str) -> bool {
+    // Check if line starts with YYYY/MM/DD HH:MM:SS pattern
     line.len() >= 19
         && line.chars().nth(4) == Some('/')
         && line.chars().nth(7) == Some('/')
@@ -207,26 +225,31 @@ fn process_log_entry(lines: &[String], state: &SafeAppState) -> Option<LogEvent>
     let first_line = &lines[0];
     let full_message = lines.join("\n");
 
+    // Create a more robust unique identifier using content hash
     let entry_hash = calculate_entry_hash(&full_message);
 
+    // Debug print to help identify duplicates
     println!("Processing entry hash: {}, first line: {}", entry_hash, first_line);
 
+    // Check if we've already processed this entry
     {
         let mut app_state = state.lock().ok()?;
         if app_state.processed_entries.contains(&entry_hash) {
             println!("Duplicate detected for hash: {}", entry_hash);
-            return None;
+            return None; // Already processed
         }
         app_state.processed_entries.insert(entry_hash);
         println!("Added new entry hash: {}, total tracked: {}", entry_hash, app_state.processed_entries.len());
     }
 
+    // Extract timestamp (first 19 characters)
     let timestamp = if first_line.len() >= 19 {
         first_line.chars().take(19).collect()
     } else {
         String::new()
     };
 
+    // Categorize based on the complete entry
     let category = categorize_log_entry(&full_message, first_line);
 
     Some(LogEvent {
@@ -244,10 +267,12 @@ fn calculate_entry_hash(content: &str) -> u64 {
 }
 
 fn categorize_log_entry(full_message: &str, first_line: &str) -> String {
+    // Check log level first - this determines the base category
     if first_line.contains("[WARN Client") {
         return "Warnings".to_string();
     }
     if first_line.contains("[DEBUG Client") {
+        // Check for specific content that should be categorized differently even if it's DEBUG
         if full_message.contains("Joined guild") || full_message.contains("guild named") {
             return "Guild".to_string();
         }
@@ -257,7 +282,9 @@ fn categorize_log_entry(full_message: &str, first_line: &str) -> String {
         return "Warnings".to_string();
     }
 
+    // For INFO logs, categorize by content
     if first_line.contains("[INFO Client") {
+        // Player actions (highest priority)
         if full_message.contains("has been slain") || full_message.contains("HomeDepotThemeSong has been slain") {
             return "Death".to_string();
         }
@@ -274,6 +301,7 @@ fn categorize_log_entry(full_message: &str, first_line: &str) -> String {
             return "Guild".to_string();
         }
 
+        // NPC Dialogue - look for character speech patterns
         if full_message.contains(": ") && (
             full_message.contains("Wounded Man:") ||
             full_message.contains("Clearfell Guard:") ||
@@ -284,6 +312,7 @@ fn categorize_log_entry(full_message: &str, first_line: &str) -> String {
             return "Dialogue".to_string();
         }
 
+        // Network/Downloads - Combined category for all networking activities
         if full_message.contains("[HTTP2]") || 
            full_message.contains("User agent:") ||
            full_message.contains("Using backend:") ||
@@ -304,6 +333,7 @@ fn categorize_log_entry(full_message: &str, first_line: &str) -> String {
             return "Network".to_string();
         }
 
+        // System categories
         if full_message.contains("[SHADER]") || full_message.contains("[TEXTURE]") ||
            full_message.contains("[RENDER]") || full_message.contains("[VULKAN]") ||
            full_message.contains("[SCENE]") || full_message.contains("Shader uses incorrect vertex layout") ||
@@ -327,17 +357,21 @@ fn categorize_log_entry(full_message: &str, first_line: &str) -> String {
             return "Item Filter".to_string();
         }
 
+        // Default for INFO logs
         return "System".to_string();
     }
 
+    // Handle non-client logs (like Signature: lines)
     if full_message.contains("Signature:") || full_message.contains("Metadata/") || full_message.contains(".fxgraph") {
         return "Graphics".to_string();
     }
 
+    // Special case: Check for guild messages regardless of log level
     if full_message.contains("Joined guild") || full_message.contains("guild named") {
         return "Guild".to_string();
     }
 
+    // Special case: Check for network messages regardless of log level
     if full_message.contains("[HTTP2]") || 
        full_message.contains("User agent:") ||
        full_message.contains("Using backend:") ||
@@ -350,11 +384,15 @@ fn categorize_log_entry(full_message: &str, first_line: &str) -> String {
         return "Network".to_string();
     }
 
+    // Default category
     "System".to_string()
 }
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_shell::init())
         .manage(SafeAppState::default())
         .invoke_handler(tauri::generate_handler![start_watching, stop_watching, open_url])
         .run(tauri::generate_context!())
