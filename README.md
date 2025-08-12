@@ -2,7 +2,7 @@
 
 A real-time log viewer and monitor for Path of Exile 2. Track your character progress, deaths, guild activities, and system performance in real-time.
 
-![POE2 Log Viewer](https://i.imgur.com/VZej3F0.png)
+![POE2 Log Viewer](https://i.imgur.com/wcHVQzM.gif)
 
 ## Features
 
