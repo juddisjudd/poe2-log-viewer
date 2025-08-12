@@ -28,6 +28,7 @@ interface UpdateInfo {
 function App() {
   const [logs, setLogs] = useState<LogEvent[]>([]);
   const [filters, setFilters] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [isWatching, setIsWatching] = useState(false);
   const [currentFile, setCurrentFile] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -43,7 +44,6 @@ function App() {
   const [lastCheckResult, setLastCheckResult] = useState<
     "none" | "up-to-date" | "available" | "error"
   >("none");
-
   const processedLogIds = useRef(new Set<string>());
 
   useEffect(() => {
@@ -66,11 +66,9 @@ function App() {
       const response = await fetch(
         "https://api.github.com/repos/juddisjudd/poe2-log-viewer/releases/latest"
       );
-
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.status}`);
       }
-
       const release = await response.json();
       const latestVersion = release.tag_name.replace(/^v/, "");
 
@@ -109,7 +107,6 @@ function App() {
     ) {
       const latestPart = latestParts[i] || 0;
       const currentPart = currentParts[i] || 0;
-
       if (latestPart > currentPart) return true;
       if (latestPart < currentPart) return false;
     }
@@ -128,7 +125,6 @@ function App() {
       try {
         const parsed = JSON.parse(savedSettings) as AppSettings;
         setSettings(parsed);
-
         if (parsed.autoLoadLastFile && parsed.lastFilePath) {
           setCurrentFile(parsed.lastFilePath);
           if (parsed.autoStartWatching) {
@@ -149,7 +145,6 @@ function App() {
 
   const handleLogEvent = useCallback((event: { payload: LogEvent }) => {
     const logEntry = event.payload;
-
     const logId = `${logEntry.timestamp}-${
       logEntry.category
     }-${logEntry.message.substring(0, 50)}`;
@@ -160,14 +155,12 @@ function App() {
     }
 
     processedLogIds.current.add(logId);
-
     console.log("Received log event:", logEntry);
     setLogs((prev) => [...prev, logEntry]);
   }, []);
 
   useEffect(() => {
     let unlisten: (() => void) | null = null;
-
     const setupListener = async () => {
       try {
         unlisten = await listen<LogEvent>("log_event", handleLogEvent);
@@ -189,8 +182,9 @@ function App() {
     try {
       setError("");
       console.log("Starting to watch file:", filePath);
-
-      const result = await invoke<string>("start_watching", { path: filePath });
+      const result = await invoke<string>("start_watching", {
+        path: filePath,
+      });
       setIsWatching(true);
       console.log("Watch result:", result);
     } catch (err) {
@@ -210,12 +204,10 @@ function App() {
         setCurrentFile(selected);
         setLogs([]);
         processedLogIds.current.clear();
-
         setSettings((prev) => ({
           ...prev,
           lastFilePath: selected,
         }));
-
         await startWatching(selected);
       }
     } catch (err) {
@@ -277,7 +269,7 @@ function App() {
               POE2 Log Viewer
             </h1>
 
-            {/* Version and Update Info - Moved to header */}
+            {/* Version and Update Info */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">
                 v{currentVersion}
@@ -307,65 +299,56 @@ function App() {
                     🔄
                   </button>
                   {lastCheckResult === "up-to-date" && (
-                    <span className="text-xs text-green-400 opacity-75">
-                      Up to date
+                    <span className="text-xs text-green-400" title="Up to date">
+                      ✓
                     </span>
                   )}
                   {lastCheckResult === "error" && (
-                    <span className="text-xs text-red-400 opacity-75">
-                      Check failed
+                    <span className="text-xs text-red-400" title="Check failed">
+                      ✗
                     </span>
                   )}
                 </div>
               )}
             </div>
-
-            {/* Live/Stopped Status */}
-            <div className="flex items-center gap-2">
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  isWatching ? "bg-emerald-400 animate-pulse" : "bg-red-400"
-                }`}
-              />
-              <span className="text-xs text-gray-400">
-                {isWatching ? "Live" : "Stopped"}
-              </span>
-            </div>
           </div>
+
+          {/* Controls */}
           <div className="flex items-center gap-2">
             <button
               onClick={pickFile}
-              className="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-sm font-medium transition-colors border border-gray-700"
+              className="bg-blue-900 hover:bg-blue-800 text-blue-100 px-3 py-2 rounded text-sm font-medium transition-colors"
             >
               Select File
             </button>
-            {currentFile && !isWatching && (
-              <button
-                onClick={reloadCurrentFile}
-                className="bg-blue-900 hover:bg-blue-800 px-3 py-1.5 rounded text-sm font-medium transition-colors border border-blue-800"
-              >
-                Start Watching
-              </button>
-            )}
-            {isWatching && (
+            {isWatching ? (
               <button
                 onClick={stopWatching}
-                className="bg-red-900 hover:bg-red-800 px-3 py-1.5 rounded text-sm font-medium transition-colors border border-red-800"
+                className="bg-red-900 hover:bg-red-800 text-red-100 px-3 py-2 rounded text-sm font-medium transition-colors"
               >
                 Stop
               </button>
+            ) : (
+              currentFile && (
+                <button
+                  onClick={() => startWatching(currentFile)}
+                  className="bg-green-900 hover:bg-green-800 text-green-100 px-3 py-2 rounded text-sm font-medium transition-colors"
+                >
+                  Start
+                </button>
+              )
             )}
             <button
               onClick={clearLogs}
-              className="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-sm font-medium transition-colors border border-gray-700"
+              className="bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded text-sm transition-colors"
             >
               Clear
             </button>
           </div>
         </div>
 
-        {/* File info and stats */}
-        <div className="flex items-center justify-between mt-2 text-xs">
+        {/* File info and status */}
+        <div className="flex items-center justify-between mt-2 text-sm">
           <div className="text-gray-400">
             {currentFile ? (
               <span>
@@ -421,12 +404,17 @@ function App() {
 
       {/* Filter Panel */}
       <div className="bg-gray-950 border-b border-gray-800 flex-shrink-0">
-        <FilterPanel filters={filters} setFilters={setFilters} />
+        <FilterPanel
+          filters={filters}
+          setFilters={setFilters}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+        />
       </div>
 
       {/* Log Viewer */}
       <div className="flex-1 overflow-hidden">
-        <LogViewer logs={logs} filters={filters} />
+        <LogViewer logs={logs} filters={filters} searchTerm={searchTerm} />
       </div>
     </div>
   );

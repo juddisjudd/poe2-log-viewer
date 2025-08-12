@@ -10,9 +10,10 @@ interface LogEvent {
 interface Props {
   logs: LogEvent[];
   filters: string[];
+  searchTerm: string;
 }
 
-export default function LogViewer({ logs, filters }: Props) {
+export default function LogViewer({ logs, filters, searchTerm }: Props) {
   const endRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -30,24 +31,48 @@ export default function LogViewer({ logs, filters }: Props) {
       Dialogue: "text-yellow-300",
       Guild: "text-emerald-300",
       "Item Filter": "text-pink-400",
-      Trade: "text-emerald-400 font-medium",
+      Trade: "text-cyan-400 font-medium",
+      Gameplay: "text-orange-300",
       Network: "text-orange-400",
       Downloads: "text-cyan-400",
       Graphics: "text-blue-400",
       Engine: "text-gray-500",
       Audio: "text-indigo-400",
-      Debug: "text-gray-500 text-xs",
       Warnings: "text-red-300 font-medium",
-      System: "text-gray-500",
     };
     return colors[cat] || "text-gray-400";
   };
 
   const formatMessage = (log: LogEvent) => {
     let message = log.message;
+
     if (log.timestamp && message.startsWith(log.timestamp)) {
       message = message.substring(log.timestamp.length).trim();
     }
+
+    if (log.category === "Trade" && message.includes("@From")) {
+      const fromMatch = message.match(/@From ([^:]+): (.+)/);
+      if (fromMatch) {
+        const [, sender, tradeMessage] = fromMatch;
+        return `💬 ${sender}: ${tradeMessage}`;
+      }
+    }
+
+    if (log.category === "Skill" && message.includes("have received")) {
+      message = message.replace(/have received ([^.]+)/, "gained $1");
+    }
+
+    if (log.category === "Level Up" && message.includes("is now level")) {
+      message = message.replace(
+        /(\w+) \([^)]+\) is now level (\d+)/,
+        "🎉 $1 reached level $2!"
+      );
+    }
+
+    if (log.category === "Death" && message.includes("has been slain")) {
+      message = message.replace("has been slain", "💀 was slain");
+    }
+
     return message;
   };
 
@@ -55,6 +80,18 @@ export default function LogViewer({ logs, filters }: Props) {
     if (!timestamp) return "??:??:??";
     const timePart = timestamp.split(" ")[1];
     return timePart || timestamp;
+  };
+
+  const highlightSearchTerm = (text: string, searchTerm: string) => {
+    if (!searchTerm) return text;
+    const regex = new RegExp(
+      `(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
+      "gi"
+    );
+    return text.replace(
+      regex,
+      '<mark class="bg-yellow-400 text-black">$1</mark>'
+    );
   };
 
   const getCategoryDisplay = (category: string) => {
@@ -69,13 +106,38 @@ export default function LogViewer({ logs, filters }: Props) {
     return shortNames[category] || category;
   };
 
-  const filteredLogs = logs.filter(
-    (log) => filters.length === 0 || filters.includes(log.category)
-  );
+  const getCategoryIcon = (category: string) => {
+    const icons: Record<string, string> = {
+      Death: "💀",
+      "Level Up": "🎉",
+      Skill: "⭐",
+      Trade: "💰",
+      Dialogue: "💬",
+      Guild: "🏛️",
+      "Item Filter": "🔍",
+      Gameplay: "🎮",
+      Network: "🌐",
+      Downloads: "📥",
+      Graphics: "🎨",
+      Engine: "⚙️",
+      Audio: "🔊",
+      Warnings: "⚠️",
+    };
+    return icons[category] || "📝";
+  };
+
+  const filteredLogs = logs.filter((log: LogEvent) => {
+    const categoryMatch =
+      filters.length === 0 || filters.includes(log.category);
+    const searchMatch =
+      !searchTerm ||
+      log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.category.toLowerCase().includes(searchTerm.toLowerCase());
+    return categoryMatch && searchMatch;
+  });
 
   return (
     <div className="h-full flex flex-col bg-black">
-      {/* Log content */}
       <div
         ref={containerRef}
         className="flex-1 overflow-y-auto font-mono text-xs leading-relaxed"
@@ -91,9 +153,11 @@ export default function LogViewer({ logs, filters }: Props) {
               <div className="text-sm">
                 {logs.length === 0
                   ? "No logs yet. Select a log file to start monitoring."
+                  : searchTerm
+                  ? `No logs match the search "${searchTerm}"`
                   : "No logs match the current filters."}
               </div>
-              {logs.length > 0 && filters.length > 0 && (
+              {logs.length > 0 && (filters.length > 0 || searchTerm) && (
                 <div className="text-xs text-gray-600 mt-1">
                   {logs.length} total logs available
                 </div>
@@ -102,17 +166,15 @@ export default function LogViewer({ logs, filters }: Props) {
           </div>
         ) : (
           <div className="p-3 space-y-px">
-            {filteredLogs.map((log, idx) => (
+            {filteredLogs.map((log: LogEvent, idx: number) => (
               <div
                 key={idx}
                 className="flex items-start gap-3 hover:bg-gray-950/50 px-2 py-0.5 rounded group"
               >
-                {/* Timestamp */}
                 <span className="text-gray-600 shrink-0 w-16 text-right font-mono">
                   {formatTimestamp(log.timestamp)}
                 </span>
 
-                {/* Category - Increased width and better overflow handling */}
                 <span className="shrink-0 w-24 text-center">
                   <span
                     className={`px-1.5 py-0.5 rounded text-xs font-medium ${
@@ -129,7 +191,9 @@ export default function LogViewer({ logs, filters }: Props) {
                         : log.category === "Item Filter"
                         ? "bg-pink-900/40 text-pink-300"
                         : log.category === "Trade"
-                        ? "bg-emerald-900/40 text-emerald-300"
+                        ? "bg-cyan-900/40 text-cyan-300"
+                        : log.category === "Gameplay"
+                        ? "bg-orange-900/40 text-orange-300"
                         : log.category === "Network"
                         ? "bg-orange-900/40 text-orange-300"
                         : log.category === "Downloads"
@@ -140,26 +204,27 @@ export default function LogViewer({ logs, filters }: Props) {
                         ? "bg-gray-800/60 text-gray-400"
                         : log.category === "Audio"
                         ? "bg-indigo-900/40 text-indigo-300"
-                        : log.category === "Debug"
-                        ? "bg-gray-800/60 text-gray-500"
                         : log.category === "Warnings"
                         ? "bg-red-900/40 text-red-300"
                         : "bg-gray-800/60 text-gray-400"
                     }`}
                     title={log.category}
                   >
+                    <span className="mr-1">
+                      {getCategoryIcon(log.category)}
+                    </span>
                     {getCategoryDisplay(log.category)}
                   </span>
                 </span>
 
-                {/* Message */}
                 <span
                   className={`${getColor(
                     log.category
                   )} break-all flex-1 leading-relaxed`}
-                >
-                  {formatMessage(log)}
-                </span>
+                  dangerouslySetInnerHTML={{
+                    __html: highlightSearchTerm(formatMessage(log), searchTerm),
+                  }}
+                />
               </div>
             ))}
             <div ref={endRef}></div>
@@ -167,17 +232,21 @@ export default function LogViewer({ logs, filters }: Props) {
         )}
       </div>
 
-      {/* Status bar */}
       <div className="bg-gray-950 border-t border-gray-800 px-3 py-2 flex justify-between items-center text-xs text-gray-500 flex-shrink-0">
         <span>
           {filteredLogs.length.toLocaleString()} of{" "}
           {logs.length.toLocaleString()} logs
         </span>
-        {filters.length > 0 && (
-          <span className="text-gray-600">
-            {filters.length} filter{filters.length !== 1 ? "s" : ""} active
-          </span>
-        )}
+        <div className="flex gap-4">
+          {filters.length > 0 && (
+            <span className="text-gray-600">
+              {filters.length} filter{filters.length !== 1 ? "s" : ""} active
+            </span>
+          )}
+          {searchTerm && (
+            <span className="text-blue-400">Search: "{searchTerm}"</span>
+          )}
+        </div>
       </div>
     </div>
   );
