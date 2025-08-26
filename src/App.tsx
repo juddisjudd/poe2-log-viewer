@@ -216,29 +216,7 @@ function App() {
     }
   };
 
-  const stopWatching = async () => {
-    try {
-      const result = await invoke<string>("stop_watching");
-      setIsWatching(false);
-      console.log("Stop result:", result);
-    } catch (err) {
-      console.error("Error stopping watch:", err);
-      setError(`Failed to stop watching: ${err}`);
-    }
-  };
 
-  const clearLogs = () => {
-    setLogs([]);
-    processedLogIds.current.clear();
-  };
-
-  const reloadCurrentFile = async () => {
-    if (currentFile) {
-      setLogs([]);
-      processedLogIds.current.clear();
-      await startWatching(currentFile);
-    }
-  };
 
   const updateSetting = (key: keyof AppSettings, value: boolean) => {
     setSettings((prev) => ({
@@ -320,29 +298,6 @@ function App() {
               className="bg-blue-900 hover:bg-blue-800 text-blue-100 px-3 py-2 rounded text-sm font-medium transition-colors"
             >
               Select File
-            </button>
-            {isWatching ? (
-              <button
-                onClick={stopWatching}
-                className="bg-red-900 hover:bg-red-800 text-red-100 px-3 py-2 rounded text-sm font-medium transition-colors"
-              >
-                Stop
-              </button>
-            ) : (
-              currentFile && (
-                <button
-                  onClick={() => startWatching(currentFile)}
-                  className="bg-green-900 hover:bg-green-800 text-green-100 px-3 py-2 rounded text-sm font-medium transition-colors"
-                >
-                  Start
-                </button>
-              )
-            )}
-            <button
-              onClick={clearLogs}
-              className="bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded text-sm transition-colors"
-            >
-              Clear
             </button>
           </div>
         </div>
