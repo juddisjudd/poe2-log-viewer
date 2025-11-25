@@ -26,21 +26,21 @@ export default function LogViewer({ logs, filters, searchTerm }: Props) {
   const getColor = (cat: string) => {
     const colors: Record<string, string> = {
       Death: "text-red-400 font-medium",
-      "Level Up": "text-emerald-400 font-medium",
+      "Level Up": "text-poe-gold font-medium",
       Skill: "text-purple-400",
-      Dialogue: "text-yellow-300",
-      Guild: "text-emerald-300",
+      Dialogue: "text-amber-400",
+      Guild: "text-emerald-400",
       "Item Filter": "text-pink-400",
-      Trade: "text-cyan-400 font-medium",
-      Gameplay: "text-orange-300",
-      Network: "text-orange-400",
+      Trade: "text-poe-gold font-medium",
+      Gameplay: "text-orange-400",
+      Network: "text-poe-textDim",
       Downloads: "text-cyan-400",
       Graphics: "text-blue-400",
-      Engine: "text-gray-500",
+      Engine: "text-poe-textMuted",
       Audio: "text-indigo-400",
-      Warnings: "text-red-300 font-medium",
+      Warnings: "text-red-400 font-medium",
     };
-    return colors[cat] || "text-gray-400";
+    return colors[cat] || "text-poe-textMuted";
   };
 
   const formatMessage = (log: LogEvent) => {
@@ -90,7 +90,7 @@ export default function LogViewer({ logs, filters, searchTerm }: Props) {
     );
     return text.replace(
       regex,
-      '<mark class="bg-yellow-400 text-black">$1</mark>'
+      '<mark class="bg-poe-gold/80 text-poe-black font-medium">$1</mark>'
     );
   };
 
@@ -137,17 +137,17 @@ export default function LogViewer({ logs, filters, searchTerm }: Props) {
   });
 
   return (
-    <div className="h-full flex flex-col bg-black">
+    <div className="h-full flex flex-col bg-poe-black">
       <div
         ref={containerRef}
         className="flex-1 overflow-y-auto font-mono text-xs leading-relaxed"
         style={{
           scrollbarWidth: "thin",
-          scrollbarColor: "#374151 #111827",
+          scrollbarColor: "#2a2a2a #0f0f0f",
         }}
       >
         {filteredLogs.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="flex items-center justify-center h-full text-poe-textMuted">
             <div className="text-center">
               <div className="text-lg mb-2">📋</div>
               <div className="text-sm">
@@ -158,7 +158,7 @@ export default function LogViewer({ logs, filters, searchTerm }: Props) {
                   : "No logs match the current filters."}
               </div>
               {logs.length > 0 && (filters.length > 0 || searchTerm) && (
-                <div className="text-xs text-gray-600 mt-1">
+                <div className="text-xs text-poe-textMuted/60 mt-1">
                   {logs.length} total logs available
                 </div>
               )}
@@ -169,9 +169,9 @@ export default function LogViewer({ logs, filters, searchTerm }: Props) {
             {filteredLogs.map((log: LogEvent, idx: number) => (
               <div
                 key={idx}
-                className="flex items-start gap-3 hover:bg-gray-950/50 px-2 py-0.5 rounded group"
+                className="flex items-start gap-3 hover:bg-poe-muted/30 px-2 py-0.5 rounded group"
               >
-                <span className="text-gray-600 shrink-0 w-16 text-right font-mono">
+                <span className="text-poe-textMuted shrink-0 w-16 text-right font-mono">
                   {formatTimestamp(log.timestamp)}
                 </span>
 
@@ -179,34 +179,34 @@ export default function LogViewer({ logs, filters, searchTerm }: Props) {
                   <span
                     className={`px-1.5 py-0.5 rounded text-xs font-medium ${
                       log.category === "Death"
-                        ? "bg-red-900/40 text-red-300"
+                        ? "bg-red-950/60 text-red-400"
                         : log.category === "Level Up"
-                        ? "bg-emerald-900/40 text-emerald-300"
+                        ? "bg-poe-muted text-poe-gold"
                         : log.category === "Skill"
-                        ? "bg-purple-900/40 text-purple-300"
+                        ? "bg-purple-950/60 text-purple-400"
                         : log.category === "Dialogue"
-                        ? "bg-yellow-900/40 text-yellow-300"
+                        ? "bg-amber-950/60 text-amber-400"
                         : log.category === "Guild"
-                        ? "bg-emerald-900/40 text-emerald-300"
+                        ? "bg-emerald-950/60 text-emerald-400"
                         : log.category === "Item Filter"
-                        ? "bg-pink-900/40 text-pink-300"
+                        ? "bg-pink-950/60 text-pink-400"
                         : log.category === "Trade"
-                        ? "bg-cyan-900/40 text-cyan-300"
+                        ? "bg-poe-muted text-poe-gold"
                         : log.category === "Gameplay"
-                        ? "bg-orange-900/40 text-orange-300"
+                        ? "bg-orange-950/60 text-orange-400"
                         : log.category === "Network"
-                        ? "bg-orange-900/40 text-orange-300"
+                        ? "bg-poe-muted text-poe-textDim"
                         : log.category === "Downloads"
-                        ? "bg-cyan-900/40 text-cyan-300"
+                        ? "bg-cyan-950/60 text-cyan-400"
                         : log.category === "Graphics"
-                        ? "bg-blue-900/40 text-blue-300"
+                        ? "bg-blue-950/60 text-blue-400"
                         : log.category === "Engine"
-                        ? "bg-gray-800/60 text-gray-400"
+                        ? "bg-poe-muted text-poe-textMuted"
                         : log.category === "Audio"
-                        ? "bg-indigo-900/40 text-indigo-300"
+                        ? "bg-indigo-950/60 text-indigo-400"
                         : log.category === "Warnings"
-                        ? "bg-red-900/40 text-red-300"
-                        : "bg-gray-800/60 text-gray-400"
+                        ? "bg-red-950/60 text-red-400"
+                        : "bg-poe-muted text-poe-textMuted"
                     }`}
                     title={log.category}
                   >
@@ -232,19 +232,19 @@ export default function LogViewer({ logs, filters, searchTerm }: Props) {
         )}
       </div>
 
-      <div className="bg-gray-950 border-t border-gray-800 px-3 py-2 flex justify-between items-center text-xs text-gray-500 flex-shrink-0">
+      <div className="bg-poe-darker border-t border-poe-border px-3 py-2 flex justify-between items-center text-xs text-poe-textMuted flex-shrink-0">
         <span>
           {filteredLogs.length.toLocaleString()} of{" "}
           {logs.length.toLocaleString()} logs
         </span>
         <div className="flex gap-4">
           {filters.length > 0 && (
-            <span className="text-gray-600">
+            <span className="text-poe-textMuted">
               {filters.length} filter{filters.length !== 1 ? "s" : ""} active
             </span>
           )}
           {searchTerm && (
-            <span className="text-blue-400">Search: "{searchTerm}"</span>
+            <span className="text-poe-gold">Search: "{searchTerm}"</span>
           )}
         </div>
       </div>

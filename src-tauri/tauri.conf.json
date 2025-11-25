@@ -1,6 +1,6 @@
 {
   "productName": "POE2 Log Viewer",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "identifier": "com.poe2.logviewer",
   "build": {
     "beforeDevCommand": "bun run dev",
@@ -18,7 +18,8 @@
         "minWidth": 800,
         "minHeight": 600,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "decorations": false
       }
     ],
     "security": {

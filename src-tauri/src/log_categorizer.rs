@@ -236,86 +236,172 @@ impl LogCategorizer {
     }
 }
 
-fn is_trade_or_chat_message(message: &str) -> bool {
-    if message.contains("@From ") {
-        return true;
-    }
-    
-    if message.contains("Trade accepted") || message.contains("Trade cancelled") {
-        return true;
-    }
-    
-    if message.contains("#") && message.contains(": ") {
-        let parts: Vec<&str> = message.split("] ").collect();
-        if parts.len() > 1 {
-            let message_part = parts[1];
-            if message_part.starts_with("#") {
-                return true;
-            }
-        }
-    }
-    
-    false
+/// Chat channel types for categorization
+#[derive(Debug, Clone, PartialEq)]
+pub enum ChatChannel {
+    Global,      // $ prefix - global/trade chat
+    Local,       // # prefix - local/area chat  
+    Guild,       // & prefix - guild player message
+    GuildSystem, // &: prefix - guild system announcement
+    Whisper,     // @From - whisper/trade interaction
+    Trade,       // Trade accepted/cancelled
 }
 
-fn is_valid_npc_dialogue(message: &str) -> bool {
-    // Known NPC names (expanded list)
-    let known_npcs = [
-        "Wounded Man:", "Clearfell Guard:", "The Bloated Miller:",
-        "Una:", "Beira of the Rotten Pack:", "Ghostly Voice:",
-        "The Rust King:", "Lachmann the Lost:", "Lachlann the Lost:",
-        "Finn:", "Renly:", "Alva:", "Zana:", "The Hooded One:",
-        "Count Geonor:", "Asala:", "Doryani:", "Dread Thicket Witch:",
-        "Trialmaster:", "Sacrifice Altar:",
-    ];
+/// Detects if a message is a chat message and returns the channel type
+fn detect_chat_channel(message: &str) -> Option<ChatChannel> {
+    // Check for @From whispers
+    if message.contains("@From ") {
+        return Some(ChatChannel::Whisper);
+    }
+    
+    // Check for trade actions
+    if message.contains("Trade accepted") || message.contains("Trade cancelled") {
+        return Some(ChatChannel::Trade);
+    }
+    
+    // Extract the message part after the log prefix (after "] ")
+    let message_part = if let Some(bracket_pos) = message.rfind("] ") {
+        &message[bracket_pos + 2..]
+    } else {
+        message
+    };
+    
+    // Check prefixes for different chat channels
+    if message_part.starts_with("$") && message_part.contains(": ") {
+        return Some(ChatChannel::Global);
+    }
+    
+    if message_part.starts_with("#") && message_part.contains(": ") {
+        return Some(ChatChannel::Local);
+    }
+    
+    if message_part.starts_with("&: ") {
+        return Some(ChatChannel::GuildSystem);
+    }
+    
+    if message_part.starts_with("&") && message_part.contains(": ") {
+        return Some(ChatChannel::Guild);
+    }
+    
+    None
+}
 
-    // Check for known NPCs first
-    for npc in &known_npcs {
-        if message.contains(npc) {
+fn is_trade_or_chat_message(message: &str) -> bool {
+    detect_chat_channel(message).is_some()
+}
+
+/// Validates if a speaker name looks like a legitimate character/NPC name
+/// No hardcoded names - uses heuristic pattern detection
+fn is_valid_speaker_name(name: &str) -> bool {
+    let name = name.trim();
+    
+    // Must have content but not be too long
+    if name.is_empty() || name.len() > 100 {
+        return false;
+    }
+    
+    // Must start with an uppercase letter (proper name)
+    if !name.chars().next().map_or(false, |c| c.is_uppercase()) {
+        return false;
+    }
+    
+    // Must not be a system keyword or log level
+    let forbidden_starts = [
+        "Has", "Is", "Been", "Now", "Level", "Client", "Server", 
+        "INFO", "DEBUG", "WARN", "ERROR", "CRIT",
+        "Using", "User", "Web", "Queue", "Hash", "Driver",
+        "Windows", "OS", "Enabled", "Result", "Connecting",
+        "Connected", "Got", "Send", "Requesting", "Backup",
+    ];
+    
+    if forbidden_starts.iter().any(|&kw| name.starts_with(kw)) {
+        return false;
+    }
+    
+    // Must not contain system indicators
+    let forbidden_contains = [
+        "Client", "Server", "INFO", "DEBUG", "WARN", "ERROR", "CRIT",
+        "=", "[", "]", "{", "}", "<", ">", "//", "\\", ".exe", ".dll",
+        "Version", "Build", "family", "count", "flags", "poecdn",
+        "pathofexile", "http", "://", "0x",
+    ];
+    
+    if forbidden_contains.iter().any(|&kw| name.contains(kw)) {
+        return false;
+    }
+    
+    // Only allow alphanumeric, spaces, commas, apostrophes, hyphens in names
+    // Examples: "The Bloated Miller", "Siora, Blade of the Mists", "O'Brien"
+    name.chars().all(|c| {
+        c.is_alphanumeric() || c.is_whitespace() || 
+        c == '\'' || c == '-' || c == ','
+    })
+}
+
+/// Validates if text looks like legitimate dialogue content
+fn is_valid_dialogue_text(text: &str) -> bool {
+    let text = text.trim();
+    
+    // Must have meaningful content
+    if text.is_empty() || text.len() < 3 {
+        return false;
+    }
+    
+    // Must not be wrapped in brackets (system tag)
+    if text.starts_with('[') || text.starts_with('{') {
+        return false;
+    }
+    
+    // Must contain alphabetic characters (actual speech)
+    let letter_count = text.chars().filter(|c| c.is_alphabetic()).count();
+    if letter_count < 2 {
+        return false;
+    }
+    
+    // Must not contain obvious system patterns
+    let forbidden = [
+        "=", "ON", "OFF", "true", "false", "null", "NULL",
+        "Version", "Build", "family", "count", "flags",
+        "accepted", "cancelled", "Failed to apply",
+        "INFO", "DEBUG", "WARN", "ERROR", "CRIT",
+        "Client", "Server", ".dll", ".exe", "0x",
+        "://", "poecdn", "pathofexile",
+    ];
+    
+    if forbidden.iter().any(|&kw| text.contains(kw)) {
+        return false;
+    }
+    
+    true
+}
+
+/// Validates NPC dialogue using heuristic pattern detection
+/// No hardcoded character/NPC names - dynamically detects dialogue patterns
+fn is_valid_npc_dialogue(message: &str) -> bool {
+    // Extract the message part after the log prefix
+    let message_part = if let Some(bracket_pos) = message.rfind("] ") {
+        &message[bracket_pos + 2..]
+    } else {
+        message
+    };
+    
+    // Skip if it looks like a chat message (already handled by Trade category)
+    if message_part.starts_with('$') || message_part.starts_with('#') || 
+       message_part.starts_with('&') || message_part.starts_with('@') ||
+       message_part.starts_with(':') {
+        return false;
+    }
+    
+    // Look for dialogue pattern: "SpeakerName: Dialogue text"
+    if let Some(colon_pos) = message_part.find(": ") {
+        let speaker = &message_part[..colon_pos];
+        let dialogue = &message_part[colon_pos + 2..];
+        
+        // Validate both speaker name and dialogue content
+        if is_valid_speaker_name(speaker) && is_valid_dialogue_text(dialogue) {
             return true;
         }
     }
-
-    // Restrictive pattern detection for unknown NPCs
-    let parts: Vec<&str> = message.split(": ").collect();
-    if parts.len() >= 2 {
-        let speaker = parts[0];
-        let speech = parts[1];
-        
-        if let Some(speaker_name) = speaker.split_whitespace().last() {
-            return !speaker_name.starts_with("@")
-                && !speaker_name.starts_with("#")
-                && !speaker_name.starts_with("[")
-                && !speaker_name.starts_with("&")
-                && !speaker_name.contains("Client")
-                && !speaker_name.contains("INFO")
-                && !speaker_name.contains("DEBUG")
-                && !speaker_name.contains("ERROR")
-                && !speaker_name.contains("WARN")
-                && speaker_name.chars().any(|c| c.is_uppercase())
-                && !speech.trim().is_empty()
-                && !speech.contains("Client")
-                && !speech.contains("INFO")
-                && !speech.contains("DEBUG")
-                && !speech.contains("ERROR")
-                && !speech.contains("WARN")
-                && !speech.contains("ON")
-                && !speech.contains("OFF")
-                && !speech.contains("=")
-                && !speech.contains("Version")
-                && !speech.contains("Build")
-                && !speech.contains("family")
-                && !speech.contains("count")
-                && !speech.contains("flags")
-                && !speech.contains("true")
-                && !speech.contains("false")
-                && !speech.contains("accepted")
-                && !speech.contains("cancelled")
-                && !speech.contains("Failed to apply")
-                && speech.len() > 5
-                && speech.chars().any(|c| c.is_alphabetic());
-        }
-    }
-
+    
     false
 }

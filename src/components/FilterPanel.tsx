@@ -54,12 +54,12 @@ export default function FilterPanel({
   };
 
   return (
-    <div className="p-4 bg-gray-950">
+    <div className="p-4 bg-poe-dark">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-gray-300">Filters</h3>
+        <h3 className="text-sm font-medium text-poe-gold">Filters</h3>
         <button
           onClick={clearAll}
-          className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+          className="text-xs text-poe-textMuted hover:text-poe-gold transition-colors"
         >
           Clear All
         </button>
@@ -71,13 +71,13 @@ export default function FilterPanel({
         <div className="flex gap-2">
           <button
             onClick={selectGameplay}
-            className="px-3 py-1 text-xs bg-emerald-900/30 hover:bg-emerald-900/50 text-emerald-300 rounded transition-colors"
+            className="px-3 py-1 text-xs bg-poe-muted hover:bg-poe-border text-poe-gold rounded transition-colors border border-poe-border"
           >
             🎮 Gameplay Only
           </button>
           <button
             onClick={selectSystem}
-            className="px-3 py-1 text-xs bg-blue-900/30 hover:bg-blue-900/50 text-blue-300 rounded transition-colors"
+            className="px-3 py-1 text-xs bg-poe-darker hover:bg-poe-muted text-poe-textDim rounded transition-colors border border-poe-border"
           >
             ⚙️ System Only
           </button>
@@ -91,8 +91,8 @@ export default function FilterPanel({
               onClick={() => toggleFilter(cat)}
               className={`px-2 py-1 rounded text-xs transition-colors ${
                 filters.includes(cat)
-                  ? "bg-emerald-800 hover:bg-emerald-700 text-emerald-100 ring-1 ring-emerald-600"
-                  : "bg-gray-800 hover:bg-gray-700 text-gray-300"
+                  ? "bg-poe-muted hover:bg-poe-border text-poe-gold ring-1 ring-poe-goldDim/50"
+                  : "bg-poe-darker hover:bg-poe-muted text-poe-textMuted"
               }`}
             >
               {cat}
@@ -108,8 +108,8 @@ export default function FilterPanel({
               onClick={() => toggleFilter(cat)}
               className={`px-2 py-1 rounded text-xs transition-colors ${
                 filters.includes(cat)
-                  ? "bg-blue-800 hover:bg-blue-700 text-blue-100 ring-1 ring-blue-600"
-                  : "bg-gray-800 hover:bg-gray-700 text-gray-300"
+                  ? "bg-poe-muted hover:bg-poe-border text-poe-textDim ring-1 ring-poe-border"
+                  : "bg-poe-black hover:bg-poe-darker text-poe-textMuted"
               }`}
             >
               {cat}
@@ -124,12 +124,12 @@ export default function FilterPanel({
             placeholder="Search logs..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-48 px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="w-48 px-2 py-1 text-xs bg-poe-black border border-poe-border rounded text-gray-300 placeholder-poe-textMuted focus:outline-none focus:border-poe-goldDim focus:ring-1 focus:ring-poe-goldDim/50"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm("")}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors text-xs"
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-poe-textMuted hover:text-poe-gold transition-colors text-xs"
               title="Clear search"
             >
               ✕
@@ -139,17 +139,17 @@ export default function FilterPanel({
       </div>
 
       {(filters.length > 0 || searchTerm) && (
-        <div className="text-xs text-gray-500 mt-3 pt-2 border-t border-gray-800">
+        <div className="text-xs text-poe-textMuted mt-3 pt-2 border-t border-poe-border">
           {filters.length > 0 && (
             <>
-              <span className="font-medium text-gray-400">Active:</span>{" "}
+              <span className="font-medium text-poe-gold">Active:</span>{" "}
               {filters.join(", ")}
             </>
           )}
           {searchTerm && (
             <div className="mt-1">
-              <span className="font-medium text-gray-400">Search:</span>{" "}
-              <span className="text-blue-400">"{searchTerm}"</span>
+              <span className="font-medium text-poe-textDim">Search:</span>{" "}
+              <span className="text-poe-gold">"{searchTerm}"</span>
             </div>
           )}
         </div>
