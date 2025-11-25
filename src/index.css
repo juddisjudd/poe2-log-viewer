@@ -1,6 +1,40 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme {
+  --color-poe-black: #0a0a0a;
+  --color-poe-darker: #0f0f0f;
+  --color-poe-dark: #171717;
+  --color-poe-muted: #1f1f1f;
+  --color-poe-border: #2a2a2a;
+  --color-poe-forest: #1a2e1a;
+  --color-poe-moss: #3d5c3d;
+  --color-poe-gold: #ffd255;
+  --color-poe-gold-dim: #c9a227;
+  --color-poe-bronze: #8b7355;
+  --color-poe-tan: #73624d;
+  --color-poe-blood: #40080c;
+  --color-poe-crimson: #6b1c1c;
+  --color-poe-text-muted: #666666;
+  --color-poe-text-dim: #888888;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
 
 body {
   margin: 0;

@@ -33,14 +33,14 @@ export default function LogViewer({ logs, filters, searchTerm }: Props) {
       "Item Filter": "text-pink-400",
       Trade: "text-poe-gold font-medium",
       Gameplay: "text-orange-400",
-      Network: "text-poe-textDim",
+      Network: "text-poe-text-dim",
       Downloads: "text-cyan-400",
       Graphics: "text-blue-400",
-      Engine: "text-poe-textMuted",
+      Engine: "text-poe-text-muted",
       Audio: "text-indigo-400",
       Warnings: "text-red-400 font-medium",
     };
-    return colors[cat] || "text-poe-textMuted";
+    return colors[cat] || "text-poe-text-muted";
   };
 
   const formatMessage = (log: LogEvent) => {
@@ -147,7 +147,7 @@ export default function LogViewer({ logs, filters, searchTerm }: Props) {
         }}
       >
         {filteredLogs.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-poe-textMuted">
+          <div className="flex items-center justify-center h-full text-poe-text-muted">
             <div className="text-center">
               <div className="text-lg mb-2">📋</div>
               <div className="text-sm">
@@ -158,7 +158,7 @@ export default function LogViewer({ logs, filters, searchTerm }: Props) {
                   : "No logs match the current filters."}
               </div>
               {logs.length > 0 && (filters.length > 0 || searchTerm) && (
-                <div className="text-xs text-poe-textMuted/60 mt-1">
+                <div className="text-xs text-poe-text-muted/60 mt-1">
                   {logs.length} total logs available
                 </div>
               )}
@@ -169,9 +169,9 @@ export default function LogViewer({ logs, filters, searchTerm }: Props) {
             {filteredLogs.map((log: LogEvent, idx: number) => (
               <div
                 key={idx}
-                className="flex items-start gap-3 hover:bg-poe-muted/30 px-2 py-0.5 rounded group"
+                className="flex items-start gap-3 hover:bg-poe-muted/30 px-2 py-0.5 rounded-sm group"
               >
-                <span className="text-poe-textMuted shrink-0 w-16 text-right font-mono">
+                <span className="text-poe-text-muted shrink-0 w-16 text-right font-mono">
                   {formatTimestamp(log.timestamp)}
                 </span>
 
@@ -195,18 +195,18 @@ export default function LogViewer({ logs, filters, searchTerm }: Props) {
                         : log.category === "Gameplay"
                         ? "bg-orange-950/60 text-orange-400"
                         : log.category === "Network"
-                        ? "bg-poe-muted text-poe-textDim"
+                        ? "bg-poe-muted text-poe-text-dim"
                         : log.category === "Downloads"
                         ? "bg-cyan-950/60 text-cyan-400"
                         : log.category === "Graphics"
                         ? "bg-blue-950/60 text-blue-400"
                         : log.category === "Engine"
-                        ? "bg-poe-muted text-poe-textMuted"
+                        ? "bg-poe-muted text-poe-text-muted"
                         : log.category === "Audio"
                         ? "bg-indigo-950/60 text-indigo-400"
                         : log.category === "Warnings"
                         ? "bg-red-950/60 text-red-400"
-                        : "bg-poe-muted text-poe-textMuted"
+                        : "bg-poe-muted text-poe-text-muted"
                     }`}
                     title={log.category}
                   >
@@ -232,14 +232,14 @@ export default function LogViewer({ logs, filters, searchTerm }: Props) {
         )}
       </div>
 
-      <div className="bg-poe-darker border-t border-poe-border px-3 py-2 flex justify-between items-center text-xs text-poe-textMuted flex-shrink-0">
+      <div className="bg-poe-darker border-t border-poe-border px-3 py-2 flex justify-between items-center text-xs text-poe-text-muted shrink-0">
         <span>
           {filteredLogs.length.toLocaleString()} of{" "}
           {logs.length.toLocaleString()} logs
         </span>
         <div className="flex gap-4">
           {filters.length > 0 && (
-            <span className="text-poe-textMuted">
+            <span className="text-poe-text-muted">
               {filters.length} filter{filters.length !== 1 ? "s" : ""} active
             </span>
           )}

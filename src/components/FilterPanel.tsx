@@ -59,7 +59,7 @@ export default function FilterPanel({
         <h3 className="text-sm font-medium text-poe-gold">Filters</h3>
         <button
           onClick={clearAll}
-          className="text-xs text-poe-textMuted hover:text-poe-gold transition-colors"
+          className="text-xs text-poe-text-muted hover:text-poe-gold transition-colors"
         >
           Clear All
         </button>
@@ -71,13 +71,13 @@ export default function FilterPanel({
         <div className="flex gap-2">
           <button
             onClick={selectGameplay}
-            className="px-3 py-1 text-xs bg-poe-muted hover:bg-poe-border text-poe-gold rounded transition-colors border border-poe-border"
+            className="px-3 py-1 text-xs bg-poe-muted hover:bg-poe-border text-poe-gold rounded-sm transition-colors border border-poe-border"
           >
             🎮 Gameplay Only
           </button>
           <button
             onClick={selectSystem}
-            className="px-3 py-1 text-xs bg-poe-darker hover:bg-poe-muted text-poe-textDim rounded transition-colors border border-poe-border"
+            className="px-3 py-1 text-xs bg-poe-darker hover:bg-poe-muted text-poe-text-dim rounded-sm transition-colors border border-poe-border"
           >
             ⚙️ System Only
           </button>
@@ -91,8 +91,8 @@ export default function FilterPanel({
               onClick={() => toggleFilter(cat)}
               className={`px-2 py-1 rounded text-xs transition-colors ${
                 filters.includes(cat)
-                  ? "bg-poe-muted hover:bg-poe-border text-poe-gold ring-1 ring-poe-goldDim/50"
-                  : "bg-poe-darker hover:bg-poe-muted text-poe-textMuted"
+                  ? "bg-poe-muted hover:bg-poe-border text-poe-gold ring-1 ring-poe-gold-dim/50"
+                  : "bg-poe-darker hover:bg-poe-muted text-poe-text-muted"
               }`}
             >
               {cat}
@@ -108,8 +108,8 @@ export default function FilterPanel({
               onClick={() => toggleFilter(cat)}
               className={`px-2 py-1 rounded text-xs transition-colors ${
                 filters.includes(cat)
-                  ? "bg-poe-muted hover:bg-poe-border text-poe-textDim ring-1 ring-poe-border"
-                  : "bg-poe-black hover:bg-poe-darker text-poe-textMuted"
+                  ? "bg-poe-muted hover:bg-poe-border text-poe-text-dim ring-1 ring-poe-border"
+                  : "bg-poe-black hover:bg-poe-darker text-poe-text-muted"
               }`}
             >
               {cat}
@@ -124,12 +124,12 @@ export default function FilterPanel({
             placeholder="Search logs..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-48 px-2 py-1 text-xs bg-poe-black border border-poe-border rounded text-gray-300 placeholder-poe-textMuted focus:outline-none focus:border-poe-goldDim focus:ring-1 focus:ring-poe-goldDim/50"
+            className="w-48 px-2 py-1 text-xs bg-poe-black border border-poe-border rounded-sm text-gray-300 placeholder-poe-text-muted focus:outline-hidden focus:border-poe-gold-dim focus:ring-1 focus:ring-poe-gold-dim/50"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm("")}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-poe-textMuted hover:text-poe-gold transition-colors text-xs"
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-poe-text-muted hover:text-poe-gold transition-colors text-xs"
               title="Clear search"
             >
               ✕
@@ -139,7 +139,7 @@ export default function FilterPanel({
       </div>
 
       {(filters.length > 0 || searchTerm) && (
-        <div className="text-xs text-poe-textMuted mt-3 pt-2 border-t border-poe-border">
+        <div className="text-xs text-poe-text-muted mt-3 pt-2 border-t border-poe-border">
           {filters.length > 0 && (
             <>
               <span className="font-medium text-poe-gold">Active:</span>{" "}
@@ -148,7 +148,7 @@ export default function FilterPanel({
           )}
           {searchTerm && (
             <div className="mt-1">
-              <span className="font-medium text-poe-textDim">Search:</span>{" "}
+              <span className="font-medium text-poe-text-dim">Search:</span>{" "}
               <span className="text-poe-gold">"{searchTerm}"</span>
             </div>
           )}
