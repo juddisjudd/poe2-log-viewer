@@ -2,6 +2,8 @@
 
 A real-time log viewer and monitor for Path of Exile 2. Track your character progress, deaths, guild activities, and system performance in real-time.
 
+[![GitHub Downloads (all assets, latest release)](https://img.shields.io/github/downloads/juddisjudd/poe2-log-viewer/latest/total)](https://github.com/juddisjudd/poe2-log-viewer/releases) [![GitHub Release](https://img.shields.io/github/v/release/juddisjudd/poe2-log-viewer)](https://github.com/juddisjudd/poe2-log-viewer/releases)
+
 <img width="1400" height="900" alt="poe2-log-viewer_Yuo5JlQeIq" src="https://github.com/user-attachments/assets/b4f97451-a564-4243-81f9-cdaa7bc4542e" />
 
 ## Features
